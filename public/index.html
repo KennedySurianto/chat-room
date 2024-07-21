@@ -109,14 +109,18 @@
         form.addEventListener('submit', function (e) {
             e.preventDefault();
             if (input.value) {
-                socket.emit('chat message', { user: userName, message: input.value });
+                let message = input.value;
+                if (message.length > 100) {
+                    message = message.substring(0, 100);
+                }
+                socket.emit('chat message', { user: userName, message: message });
                 input.value = '';
             }
         });
 
         socket.on('chat message', function (msg) {
             const item = document.createElement('li');
-            item.textContent = `${msg.user}: ${msg.message}`;
+            item.innerHTML = `<strong>${msg.user}:</strong> ${msg.message}`;
             item.classList.add('message-item');
             document.getElementById('messages').appendChild(item);
             window.scrollTo(0, document.body.scrollHeight);

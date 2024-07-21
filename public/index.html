@@ -40,9 +40,7 @@
             border-radius: 5px;
             background-color: #f4f4f4;
             word-wrap: break-word;
-            /* Ensure long words break to fit in the container */
             white-space: pre-wrap;
-            /* Preserve whitespace and line breaks */
         }
     </style>
 </head>
@@ -52,7 +50,8 @@
         <h2 class="text-center">Join Chat</h2>
         <form id="nameForm">
             <div class="form-group">
-                <input id="nameInput" class="form-control" placeholder="Enter your name" autocomplete="off" />
+                <input id="nameInput" class="form-control" placeholder="Enter your name" autocomplete="off"
+                    maxlength="15" />
             </div>
             <div class="form-group">
                 <input id="passwordInput" type="password" class="form-control" placeholder="Enter the password"
@@ -84,11 +83,18 @@
         const nameFormContainer = document.getElementById('nameFormContainer');
         const errorMessage = document.getElementById('errorMessage');
         let userName = '';
+        let lastMessageTime = 0; // Timestamp of the last sent message
+        const messageCooldown = 3000; // Cooldown period in milliseconds (3 seconds)
 
         nameForm.addEventListener('submit', function (e) {
             e.preventDefault();
             if (nameInput.value && passwordInput.value) {
-                socket.emit('join request', { name: nameInput.value, password: passwordInput.value });
+                if (nameInput.value.length <= 15) {
+                    socket.emit('join request', { name: nameInput.value, password: passwordInput.value });
+                } else {
+                    errorMessage.textContent = "Username must be 15 characters or less";
+                    errorMessage.classList.remove('hidden');
+                }
             }
         });
 
@@ -99,6 +105,7 @@
                 chatContainer.classList.remove('hidden');
                 socket.emit('user joined', userName);
             } else {
+                errorMessage.textContent = "Incorrect password";
                 errorMessage.classList.remove('hidden');
             }
         });
@@ -108,13 +115,18 @@
 
         form.addEventListener('submit', function (e) {
             e.preventDefault();
-            if (input.value) {
+            const now = Date.now();
+            if (input.value && now - lastMessageTime >= messageCooldown) {
                 let message = input.value;
                 if (message.length > 100) {
                     message = message.substring(0, 100);
                 }
                 socket.emit('chat message', { user: userName, message: message });
                 input.value = '';
+                lastMessageTime = now; // Update the last message time
+            } else {
+                // Optionally, show a warning message about spamming
+                console.warn("You're sending messages too quickly. Please wait.");
             }
         });
 
